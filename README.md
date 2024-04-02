@@ -1,5 +1,6 @@
 # Newsletter using Lambda, SQS e SNS
 
+## Overview
 Esse projeto é uma prova de conceito (POC) que visa demonstrar a implementação de um sistema robusto e escalável para o envio eficiente de newsletters. 
 
 Vamos entender um pouco mais da stack e serviços escolhidos:
@@ -31,3 +32,6 @@ No projeto é responsável por armazenar toda as mensagens de assinatura, garant
 Um dos recursos do SNS é justamente o push de email, quando um usuário assina uma newsletter, ele é inscrito em um tópico do SNS, e o SNS fica responsável por enviar a mensagem  para o cadastrado.
 
 ### System Design
+
+<img src="image/system-design.png" alt="Descrição da imagem" width="850" height="200">
+
