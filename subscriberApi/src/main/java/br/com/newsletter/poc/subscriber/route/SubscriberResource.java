@@ -7,7 +7,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-@Path("/api")
+@Path("api")
 public class SubscriberResource {
 
     @Inject
@@ -25,7 +25,10 @@ public class SubscriberResource {
 
         }catch (IllegalArgumentException e) {
 
-            return Response.status(402).build();
+            return Response.status(422).entity(e.getMessage()).build();
+
+        }catch (Exception e) {
+            return Response.status(500).entity("Error send subscription").build();
         }
 
 
