@@ -5,8 +5,13 @@ import com.amazon.sqs.javamessaging.ProviderConfiguration;
 import com.amazon.sqs.javamessaging.SQSConnection;
 import com.amazon.sqs.javamessaging.SQSConnectionFactory;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import io.quarkus.logging.Log;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.json.Json;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import javax.jms.*;
@@ -25,11 +30,14 @@ public class AmazonQueue implements SubscriberQueue {
 
     @ConfigProperty(name = "aws.sqs.region")
     private String queueRegion;
-    private SQSConnection connection;
+
+    private SQSConnection sqsConnection;
+
+    private static final ObjectMapper jsonMapper = new ObjectMapper();
     @PostConstruct
     public void InitClient() {
         try {
-            this.connection = createConnection();
+            this.sqsConnection = createConnection();
         }catch (JMSException e) {
             System.out.println(e.getMessage());
         }
@@ -47,23 +55,31 @@ public class AmazonQueue implements SubscriberQueue {
         return connectionFactory.createConnection(accessKeyId, secretAccessKey);
     }
     @Override
-    public void Send(QueueMessage message) {
+    public void Send(QueueMessage queueMessage) {
 
         try {
             // ensure scalability, resource management, fault tolerance and integrating greater resilience
-            Session sendSession = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            Session sendSession = sqsConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
             Queue queue = sendSession.createQueue(queueName);
 
             MessageProducer producer = sendSession.createProducer(queue);
 
-            ObjectMessage serializableMessage = sendSession.createObjectMessage(message);
+            var message = jsonMapper.writeValueAsString(queueMessage);
+
+            var serializableMessage = sendSession.createTextMessage(message);
 
             producer.send(serializableMessage);
 
-            System.out.println("JMS Message " + serializableMessage.getJMSMessageID());
+            Log.infof("Send Message: %s", serializableMessage.getJMSMessageID());
 
         } catch (JMSException e) {
+            Log.errorf(e, "Error on create JMS message");
+            throw new RuntimeException(e);
+
+        } catch (JsonProcessingException e) {
+            Log.errorf(e, "Error on create json message");
+
             throw new RuntimeException(e);
         }
 
